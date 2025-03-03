@@ -16,7 +16,7 @@ namespace Monitor {
 
 // Should be thread-safe because the only shared state is fds and mems, but they
 // will be accessed in different indices by different threads.
-AEvent* SharedMemory::OpenSharedMemory(int pid, Sid sid) {
+void SharedMemory::Open(Sid sid) {
   assert(sid < NUM_SLOTS);
 
   // Open a new file descriptor, creating the file if it does not exist
@@ -27,14 +27,14 @@ AEvent* SharedMemory::OpenSharedMemory(int pid, Sid sid) {
 
   if (fd < 0) {
     // printf("Error opening file %s!\n", file_name);
-    return nullptr;
+    return;
   }
 
   // Ensure that the file will hold enough space
   lseek(fd, BUF_SIZE * sizeof(Event), SEEK_SET);
   if (write(fd, "", 1) < 1) {
     // printf("Error writing a single byte to file.\n");
-    return nullptr;
+    return;
   }
   lseek(fd, 0, SEEK_SET);
 

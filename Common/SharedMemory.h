@@ -23,21 +23,21 @@ public:
 
   ~SharedMemory();
 
-  AEvent* OpenSharedMemory(int pid, Sid sid);
+  void Open(Sid sid);
   Event Consume(Sid sid) {
     int idx = idxs[sid];
     AEvent* evp = &mems[sid][idx];
     idxs[sid] = (idx + 1) & SLOT_IDX_MASK;
     return evp->load();
   }
-  void Ready(Sid sid) {
-    int idx = idxs[sid];
-    assert(idx == 0);
+  void Ready() {
+    assert(idxs[0] == 0);
 
-    mems[sid][0].store(kEvMonitorReady);
-    idxs[sid]++;
+    mems[0][0].store(kEvMonitorReady);
+    idxs[0]++;
   }
   void Close(Sid sid) { close(fds[sid]); }
+  bool IsOpened(Sid sid) { return mems[sid] != nullptr; }
 
 private:
   int pid;

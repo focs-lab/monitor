@@ -72,29 +72,22 @@ void *worker(void *arg) {
   Tid tid = *data;
 
   u64 slot_counts[SLOTS_PER_WORKER];
-  u64 slot_idxs[SLOTS_PER_WORKER];
 
   for (u8 i = 0; i < SLOTS_PER_WORKER; ++i) {
     Sid sid = i*NUM_WORKERS+tid;
-    mems[i] = OpenSlotFile(pid, sid, &fds[i]);
+    shm->Open(sid);
     slot_counts[i] = 0;
-    slot_idxs[i] = 0;
   }
 
   // Tell the program it can start.
-  if (tid == 0) {
-    mems[0][0].store(kEvMonitorReady, std::memory_order_release);
-    slot_idxs[0]++;
-  }
+  if (tid == 0) shm->Ready();
 
   while (!stop.load()) {
     for (u8 i = 0; i < SLOTS_PER_WORKER; ++i) {
-      if (!mems[i]) continue;
-
       Sid sid = i*NUM_WORKERS+tid;
+      if (!shm->IsOpened(sid)) continue;
       do {
-        std::atomic<Event> *evp = mems[i] + (slot_idxs[i] & SLOT_IDX_MASK);
-        Event ev = evp->load(std::memory_order_acquire);
+        Event ev = shm->Consume(sid);
         if (ev.raw != kEvClear.raw) {
           // Handle event
           int steps = handle_event(i*NUM_WORKERS+tid, ev, mems[i], slot_idxs[i]+1);
@@ -109,7 +102,7 @@ void *worker(void *arg) {
           }
         }
         else break;   // if data is not ready we dont want to loop
-      } while (slot_idxs[i] % 16 != 0 && !stop);  // read up to cache line alignment to maximise throughput
+      } while (slot_counts[i] % 16 != 0 && !stop);  // read up to cache line alignment to maximise throughput
     }
   }
 
