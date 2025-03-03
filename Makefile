@@ -1,5 +1,5 @@
-monitor: monitor.cpp
-	g++ monitor.cpp -o monitor -lpthread
+monitor: Monitor.cpp
+	g++ Monitor.cpp -o Monitor -lpthread
 
 test: test.cpp
 	~/llvm-project/build/bin/clang++ -fsanitize=thread -g test.cpp -O2 -o test
