@@ -1,3 +1,4 @@
+
 #include <fcntl.h>
 #include <pthread.h>
 #include <signal.h>
@@ -9,10 +10,10 @@
 #include <unistd.h>
 #include <atomic>
 
-#include "Constants.h"
-#include "SharedMemory.h"
-#include "Types.h"
-#include "Event.h"
+#include "Common/Constants.h"
+#include "Common/SharedMemory.h"
+#include "Common/Types.h"
+#include "Common/Event.h"
 
 
 using namespace Monitor;
@@ -29,37 +30,36 @@ void handle_sigint(int sig) {
   // exit(0);
 }
 
-u64 off(u32 idx, u32 offset) { return (idx + offset) & SLOT_IDX_MASK; }
+u64 off(u32 idx, u32 offset) { return (idx + offset) & BUF_IDX_MASK; }
 
-u64 handle_event(Tid tid, Event ev, std::atomic<Event>* mem, int idx) {
+u64 handle_event(Sid sid, Event ev, SharedMemory *shm) {
   int steps = 0;
-
   u64 value = 0, counter = 0, old_value = 0, new_value = 0;
 
   switch (ev.event_type) {
   case Write:
   case Read:
     steps = 1;
-    value = mem[idx].load().raw;
-    printf("[MONITOR] #%u/%u: %s %p %#llx\n", tid, ev.lap_num, eventtype_to_string(ev.event_type), ev.addr, value);
+    value = shm->Consume(sid).raw;
+    printf("[MONITOR] #%u/%u: %s %p %#llx\n", sid, ev.lap_num, eventtype_to_string(ev.event_type), ev.addr, value);
     break;
   case AtomicLoad:
   case AtomicStore:
     steps = 2;
-    counter = mem[idx].load().raw;
-    value = mem[off(idx, 1)].load().raw;
-    printf("[MONITOR] #%u/%u: %s %p %#llx (#%u)\n", tid, ev.lap_num, eventtype_to_string(ev.event_type), ev.addr, value, counter);
+    counter = shm->Consume(sid).raw;
+    value = shm->Consume(sid).raw;
+    printf("[MONITOR] #%u/%u: %s %p %#llx (#%u)\n", sid, ev.lap_num, eventtype_to_string(ev.event_type), ev.addr, value, counter);
     break;
   case AtomicRMW:
   case AtomicCAS:
     steps = 3;
-    counter = mem[idx].load().raw;
-    old_value = mem[off(idx, 1)].load().raw;
-    new_value = mem[off(idx, 2)].load().raw;
-    printf("[MONITOR] #%u/%u: %s %p %#llx %#llx (#%u)\n", tid, ev.lap_num, eventtype_to_string(ev.event_type), ev.addr, old_value, new_value, counter);
+    counter = shm->Consume(sid).raw;
+    old_value = shm->Consume(sid).raw;
+    new_value = shm->Consume(sid).raw;
+    printf("[MONITOR] #%u/%u: %s %p %#llx %#llx (#%u)\n", sid, ev.lap_num, eventtype_to_string(ev.event_type), ev.addr, old_value, new_value, counter);
     break;
   default:
-    printf("[MONITOR] #%u/%u: %s %p\n", tid, ev.lap_num, eventtype_to_string(ev.event_type), ev.addr);
+    printf("[MONITOR] #%u/%u: %s %p\n", sid, ev.lap_num, eventtype_to_string(ev.event_type), ev.addr);
     break;
   }
 
@@ -90,13 +90,11 @@ void *worker(void *arg) {
         Event ev = shm->Consume(sid);
         if (ev.raw != kEvClear.raw) {
           // Handle event
-          int steps = handle_event(i*NUM_WORKERS+tid, ev, mems[i], slot_idxs[i]+1);
-          slot_idxs[i] += 1+steps;
+          int steps = handle_event(sid, ev, shm);
           slot_counts[i]++;
 
           if (HasProgramEnded(ev)) {
-            slot_idxs[i] = 0;
-            mems[i] = nullptr;
+            shm->Close(sid);
             stop.store(1);
             printf("[MONITOR] #%u Exit!\n", sid);
           }
@@ -163,4 +161,3 @@ int main(int argc, char** argv)
 
   return 0;
 }
-

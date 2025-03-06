@@ -2,6 +2,8 @@
 #define MONITOR_EVENT_H
 
 #include <atomic>
+#include <cstring>
+#include <optional>
 
 #include "Types.h"
 
@@ -30,41 +32,6 @@ enum EventType : u8 {
   Ignore = 0xff
 };
 
-const char* eventtype_to_string(EventType evt) {
-  switch (evt) {
-  case Clear:
-    return "CLEAR";
-  case Read:
-    return "READ";
-  case Write:
-    return "WRITE";
-  case VptrUpdate:
-    return "VPTRUPDATE";
-  case VptrLoad:
-    return "VPTRLOAD";
-  case Memset:
-    return "MEMSET";
-  case Memcpy:
-    return "MEMCPY";
-  case AtomicLoad:
-    return "ATOMICLOAD";
-  case AtomicStore:
-    return "ATOMICSTORE";
-  case AtomicRMW:
-    return "ATOMICRMW";
-  case AtomicCAS:
-    return "ATOMICCAS";
-  case AtomicFence:
-    return "ATOMICFENCE";
-  case Return:
-    return "RETURN";
-  case AtExit:
-    return "ATEXIT";
-
-  default:
-    return "UNKNOWN";
-  }
-}
 
 typedef union {
   u64 raw;
@@ -84,7 +51,33 @@ constexpr Event kEvClear = raw_event(0);
 constexpr Event kEvMonitorReady = raw_event(0xcafebeef);
 constexpr Event kEvProgramEnded = raw_event(0xdeaddead);
 
-bool HasProgramEnded(Event ev) { return ev.raw == kEvProgramEnded.raw; }
+const char* eventtype_to_string(EventType evt);
+bool HasProgramEnded(Event ev);
+
+class Chunk {
+public:
+  static constexpr u32 kChunkSize = kCacheLineSize * 128;
+  static constexpr u32 kChunkNumEvents = kChunkSize / sizeof(Event);
+
+  // Only for preallocation
+  Chunk() {}
+
+  Chunk(TraceId trace_id, AEvent* buffer, int idx)
+    : trace_id(trace_id) {
+    for (int i = 0; i < kChunkNumEvents; ++i)
+      events[i] = buffer[idx + i];
+  }
+
+  inline std::optional<Event> next() {
+    if (cursor >= kChunkNumEvents) return std::nullopt;
+    return std::optional(events[cursor++]);
+  }
+
+private:
+  Event events[kChunkNumEvents];
+  TraceId trace_id;
+  int cursor;
+};
 
 }   // namespace Monitor
 

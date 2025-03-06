@@ -1,13 +1,17 @@
 #ifndef MONITOR_INGESTOR_H
 #define MONITOR_INGESTOR_H
 
-#include "Event.h"
+#include "Common/Event.h"
+#include "Common/Types.h"
 
 namespace Monitor {
 
 class Ingestor {
 public:
-  int handle_event(Event);
+  Ingestor(Collector& collector) : collector(collector) {}
+  int handle_event(TraceId, Event);
+private:
+  Collector &collector;
 };
 
 }   // namespace Monitor
