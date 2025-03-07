@@ -17,12 +17,12 @@ public:
   ~Monitor();
   void Start();
 private:
-  static constexpr int kNumCollectors = kNumWorkers;
-  static constexpr int kNumIngestors = kNumWorkers;
-  static constexpr int kTracesPerCollector = kNumTraces / kNumCollectors;
-  static constexpr int kTracesPerIngestor = kNumTraces / kNumIngestors;
-  static_assert(kTracesPerCollector * kNumCollectors == kNumTraces);
-  static_assert(kTracesPerIngestor * kNumIngestors == kNumTraces);
+  // static constexpr int kNumCollectors = kNumWorkers;
+  // static constexpr int kNumIngestors = kNumWorkers;
+  // static constexpr int kTracesPerCollector = kNumTraces / kNumCollectors;
+  // static constexpr int kTracesPerIngestor = kNumTraces / kNumIngestors;
+  // static_assert(kTracesPerCollector * kNumCollectors == kNumTraces);
+  // static_assert(kTracesPerIngestor * kNumIngestors == kNumTraces);
 
   SharedMemory *shm;
   std::vector<Collector> collectors;

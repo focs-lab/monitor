@@ -3,33 +3,33 @@
 namespace Monitor {
 const char* eventtype_to_string(EventType evt) {
   switch (evt) {
-  case Clear:
+  case CLEAR:
     return "CLEAR";
-  case Read:
+  case READ:
     return "READ";
-  case Write:
+  case WRITE:
     return "WRITE";
-  case VptrUpdate:
+  case VPTRUPDATE:
     return "VPTRUPDATE";
-  case VptrLoad:
+  case VPTRLOAD:
     return "VPTRLOAD";
-  case Memset:
+  case MEMSET:
     return "MEMSET";
-  case Memcpy:
+  case MEMCPY:
     return "MEMCPY";
-  case AtomicLoad:
+  case ATOMICLOAD:
     return "ATOMICLOAD";
-  case AtomicStore:
+  case ATOMICSTORE:
     return "ATOMICSTORE";
-  case AtomicRMW:
+  case ATOMICRMW:
     return "ATOMICRMW";
-  case AtomicCAS:
+  case ATOMICCAS:
     return "ATOMICCAS";
-  case AtomicFence:
+  case ATOMICFENCE:
     return "ATOMICFENCE";
-  case Return:
+  case RETURN:
     return "RETURN";
-  case AtExit:
+  case ATEXIT:
     return "ATEXIT";
 
   default:
@@ -37,6 +37,6 @@ const char* eventtype_to_string(EventType evt) {
   }
 }
 
-bool HasProgramEnded(Event ev) { return ev.raw == kEvProgramEnded.raw; }
+bool HasProgramEnded(LoggedEvent ev) { return ev.raw == kEvProgramEnded.raw; }
 
 }   // namespace Monitor

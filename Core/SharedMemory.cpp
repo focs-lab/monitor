@@ -39,7 +39,7 @@ void SharedMemory::Open(TraceId trace_id) {
   }
   lseek(fd, 0, SEEK_SET);
 
-  std::atomic<Event>* mem = reinterpret_cast<std::atomic<Event>*>(mmap(
+  std::atomic<LoggedEvent>* mem = reinterpret_cast<std::atomic<LoggedEvent>*>(mmap(
     NULL,
     kBufferSize,
     PROT_READ | PROT_WRITE,

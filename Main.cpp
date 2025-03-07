@@ -32,26 +32,26 @@ void handle_sigint(int sig) {
 
 u64 off(u32 idx, u32 offset) { return (idx + offset) & BUF_IDX_MASK; }
 
-u64 handle_event(Sid sid, Event ev, SharedMemory *shm) {
+u64 handle_event(Sid sid, LoggedEvent ev, SharedMemory *shm) {
   int steps = 0;
   u64 value = 0, counter = 0, old_value = 0, new_value = 0;
 
   switch (ev.event_type) {
-  case Write:
-  case Read:
+  case WRITE:
+  case READ:
     steps = 1;
     value = shm->Consume(sid).raw;
     printf("[MONITOR] #%u/%u: %s %p %#llx\n", sid, ev.lap_num, eventtype_to_string(ev.event_type), ev.addr, value);
     break;
-  case AtomicLoad:
-  case AtomicStore:
+  case ATOMICLOAD:
+  case ATOMICSTORE:
     steps = 2;
     counter = shm->Consume(sid).raw;
     value = shm->Consume(sid).raw;
     printf("[MONITOR] #%u/%u: %s %p %#llx (#%u)\n", sid, ev.lap_num, eventtype_to_string(ev.event_type), ev.addr, value, counter);
     break;
-  case AtomicRMW:
-  case AtomicCAS:
+  case ATOMICRMW:
+  case ATOMICCAS:
     steps = 3;
     counter = shm->Consume(sid).raw;
     old_value = shm->Consume(sid).raw;
@@ -87,7 +87,7 @@ void *worker(void *arg) {
       Sid sid = i*NUM_WORKERS+tid;
       if (!shm->IsOpened(sid)) continue;
       do {
-        Event ev = shm->Consume(sid);
+        LoggedEvent ev = shm->Consume(sid);
         if (ev.raw != kEvClear.raw) {
           // Handle event
           int steps = handle_event(sid, ev, shm);

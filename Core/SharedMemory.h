@@ -31,9 +31,9 @@ public:
 
   void Open(TraceId trace_id);
   // Avoid using this. Use ConsumeCheck instead.
-  inline Event Consume(TraceId trace_id) {
+  inline LoggedEvent Consume(TraceId trace_id) {
     int idx = idxs[trace_id];
-    AEvent* evp = &mems[trace_id][idx];
+    AMEvent* evp = &mems[trace_id][idx];
     idxs[trace_id] = (idx + 1) & kBufferIdxMask;
     return evp->load();
   }
@@ -41,7 +41,7 @@ public:
   inline bool MaybeConsumeChunk(TraceId trace_id, Chunk* dest, int max_tries=8) {
     assert(is_open[trace_id]);
 
-    AEvent* buf = mems[trace_id];
+    AMEvent* buf = mems[trace_id];
     int idx = idxs[trace_id];
 
     // Check that the next next chunk is already being written to
@@ -81,7 +81,7 @@ public:
 private:
   int pid;
   bool is_open[kNumTraces];
-  AEvent* mems[kNumTraces];
+  AMEvent* mems[kNumTraces];
   int fds[kNumTraces];
   int idxs[kNumTraces];
 };

@@ -7,9 +7,10 @@
 namespace Monitor {
 
 class Ingestor {
+  typedef IngestorEvent Event;
 public:
   Ingestor(Collector& collector) : collector(collector) {}
-  int handle_event(TraceId, Event);
+  int handle_event(TraceId, Event&);
 private:
   Collector &collector;
 };
